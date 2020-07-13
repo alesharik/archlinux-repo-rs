@@ -156,7 +156,7 @@ pub struct Repository {
     url: String,
     name: String,
     load_files_meta: bool,
-    progress_listener: Option<Box<dyn Fn(Progress) -> ()>>,
+    progress_listener: Option<Box<dyn Fn(Progress)>>,
     packages: Vec<Rc<Package>>,
     package_base: HashMap<String, Rc<Package>>,
     package_name: HashMap<String, Rc<Package>>,
@@ -397,7 +397,7 @@ pub struct RepositoryBuilder {
     name: String,
     url: String,
     files_meta: bool,
-    progress_listener: Option<Box<dyn Fn(Progress) -> ()>>,
+    progress_listener: Option<Box<dyn Fn(Progress)>>,
 }
 
 impl RepositoryBuilder {
@@ -418,7 +418,7 @@ impl RepositoryBuilder {
     }
 
     /// Set load progress listener
-    pub fn progress_listener(mut self, listener: Box<dyn Fn(Progress) -> ()>) -> Self {
+    pub fn progress_listener(mut self, listener: Box<dyn Fn(Progress)>) -> Self {
         self.progress_listener = Some(listener);
         self
     }
