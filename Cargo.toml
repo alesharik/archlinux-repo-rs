@@ -21,7 +21,7 @@ tar = "0.4.29"
 reqwest = "0.10.6"
 hyper = "0.13.6"
 log = "0.4.8"
-archlinux-repo-parser = { path = "parser" }
+archlinux-repo-parser = { path = "parser", version = "0.1.0" }
 
 [workspace]
 members = ["parser"]
