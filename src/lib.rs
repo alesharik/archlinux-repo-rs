@@ -651,7 +651,7 @@ mod test {
                 return;
             }
         }
-        assert!(false);
+        unreachable!();
     }
 
     #[tokio::test]

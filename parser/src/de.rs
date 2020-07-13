@@ -11,6 +11,7 @@ pub struct Deserializer<'de> {
 }
 
 impl<'de> Deserializer<'de> {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(input: &'de str) -> Self {
         Deserializer { input }
     }
@@ -33,14 +34,14 @@ where
 
 impl<'de> Deserializer<'de> {
     fn parse_line(&mut self) -> Result<&'de str> {
-        match self.input.find("\n") {
+        match self.input.find('\n') {
             Some(len) => {
                 let s = &self.input[..len];
                 self.input = &self.input[len + 1..];
                 Ok(s)
             }
             None => {
-                if self.input.len() == 0 {
+                if self.input.is_empty() {
                     Err(Error::Eof)
                 } else {
                     let s = self.input;
@@ -52,15 +53,15 @@ impl<'de> Deserializer<'de> {
     }
 
     fn peek_delimiter(&mut self) -> Result<bool> {
-        match self.input.find("\n") {
+        match self.input.find('\n') {
             Some(len) => Ok(len == 0),
-            None => Ok(self.input.len() == 0),
+            None => Ok(self.input.is_empty()),
         }
     }
 
     fn parse_field_name(&mut self) -> Result<&'de str> {
         let line = self.parse_line()?;
-        if line.starts_with("%") && line.ends_with("%") {
+        if line.starts_with('%') && line.ends_with('%') {
             Ok(&line[1..line.len() - 1])
         } else {
             Err(Error::FieldNameUnexpectedWrapper(String::from(line)))
@@ -83,12 +84,12 @@ impl<'de> Deserializer<'de> {
         } else if line.len() != 1 {
             Err(Error::CharOverflow)
         } else {
-            Ok(line.chars().nth(0).unwrap())
+            Ok(line.chars().next().unwrap())
         }
     }
 
     fn parse_delimiter(&mut self) -> Result<()> {
-        match self.input.find("\n") {
+        match self.input.find('\n') {
             Some(len) => {
                 let s = &self.input[..len];
                 self.input = &self.input[len + 1..];
