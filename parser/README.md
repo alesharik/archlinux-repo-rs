@@ -17,7 +17,8 @@ struct Test {
 }
 
 fn main() {
-    let string = archlinux_repo_parser::to_string(Test {test: "test" }).unwrap();
+    let test = Test {test: "test".to_owned() };
+let string = archlinux_repo_parser::to_string(&test).unwrap();
     let decoded: Test = archlinux_repo_parser::from_str(&string).unwrap();
 }
 ```

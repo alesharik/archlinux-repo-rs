@@ -1,7 +1,7 @@
 //! Arch Linux repository package definitions parser
 //!
 //! # Example
-//! ```rust
+//! ```ignore
 //! #[allow(clippy::needless_doctest_main)]
 //! struct Test {
 //!     #[serde(rename = "TEST")]
@@ -9,7 +9,7 @@
 //! }
 //!
 //! fn main() {
-//!     let  test = Test {test: "test".to_owned() };
+//!     let test = Test {test: "test".to_owned() };
 //!     let string = archlinux_repo_parser::to_string(&test).unwrap();
 //!     let decoded: Test = archlinux_repo_parser::from_str(&string).unwrap();
 //! }
