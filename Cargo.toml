@@ -1,0 +1,27 @@
+[package]
+name = "archlinux-repo"
+version = "0.1.0"
+authors = ["Aleksei Arsenev <alesharik4@gmail.com>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+description = "Arch Linux repositories parser"
+readme = "README.md"
+repository = "https://github.com/alesharik/archlinux-repo-rs"
+keywords = ["archlinux", "repository", "client"]
+categories = ["asynchronous"]
+include = ["src/", "LICENSE-APACHE", "LICENSE-MIT", "README.md"]
+
+[dependencies]
+serde = { version = "1.0.114", features = ["derive"] }
+futures = "0.3.5"
+tokio = { version = "0.2.21", features = ["macros"] }
+chrono = "0.4.13"
+flate2 = "1.0.16"
+tar = "0.4.29"
+reqwest = "0.10.6"
+hyper = "0.13.6"
+log = "0.4.8"
+archlinux-repo-parser = { path = "parser" }
+
+[workspace]
+members = ["parser"]

@@ -1,0 +1,16 @@
+language: rust
+sudo: false
+rust:
+  - nightly
+  - beta
+  - stable
+before_script:
+  - rustup component add rustfmt
+  - rustup component add clippy --toolchain=nightly || cargo install --git https://github.com/rust-lang/rust-clippy/ --force clippy
+script:
+  - cargo fmt -- --check
+  - cargo clippy --all-targets --all-features -- -D warnings
+  - cargo test --all
+env:
+  global:
+    - RUST_BACKTRACE=1

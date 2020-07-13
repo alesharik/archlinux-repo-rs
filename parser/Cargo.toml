@@ -1,0 +1,15 @@
+[package]
+name = "archlinux-repo-parser"
+version = "0.1.0"
+authors = ["Aleksei Arsenev <alesharik4@gmail.com>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+description = "Serde support to parse package definitions in Arch Linux repository"
+readme = "README.md"
+repository = "https://github.com/alesharik/archlinux-repo-rs"
+keywords = ["archlinux", "serde", "repository"]
+categories = ["parser-implementations"]
+include = ["src/", "LICENSE-APACHE", "LICENSE-MIT", "README.md"]
+
+[dependencies]
+serde = { version = "1.0.114", features = ["derive"] }
