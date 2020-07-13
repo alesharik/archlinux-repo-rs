@@ -2,6 +2,7 @@
 //!
 //! # Example
 //! ```rust
+//! #[allow(clippy::needless_doctest_main)]
 //! struct Test {
 //!     #[serde(rename = "TEST")]
 //!     test: String
