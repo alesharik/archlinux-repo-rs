@@ -1,6 +1,6 @@
 [package]
 name = "archlinux-repo"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Aleksei Arsenev <alesharik4@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -21,7 +21,7 @@ tar = "0.4.29"
 reqwest = "0.10.6"
 hyper = "0.13.6"
 log = "0.4.8"
-archlinux-repo-parser = { path = "parser", version = "0.1.0" }
+archlinux-repo-parser = { path = "parser", version = "0.1.1" }
 
 [workspace]
 members = ["parser"]
