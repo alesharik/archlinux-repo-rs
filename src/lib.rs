@@ -1,3 +1,18 @@
+//! Arch Linux repository parser
+//!
+//! ## Example
+//! ```ignore
+//! use archlinux_repo::Repository;
+//! async fn main() {
+//!     let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64")
+//!         .await
+//!         .unwrap();
+//!     let gtk = &repo["mingw-w64-gtk3"];
+//!     for package in &repo {
+//!         println!("{}", &package.name);
+//!     }
+//! }
+//! ```
 use chrono::{DateTime, Utc};
 use flate2::read::GzDecoder;
 use reqwest::{StatusCode, Url};
