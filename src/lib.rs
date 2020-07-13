@@ -168,7 +168,7 @@ impl Repository {
     /// Loads arch repository by it's name and url
     ///
     /// # Example
-    /// ```no_run
+    /// ```ignore
     /// use archlinux_repo::Repository;
     ///
     /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
@@ -180,7 +180,7 @@ impl Repository {
     /// Get package by full name. Will return `None` if package cannot be found
     ///
     /// # Example
-    /// ```no_run
+    /// ```ignore
     /// use archlinux_repo::Repository;
     ///
     /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
@@ -193,7 +193,7 @@ impl Repository {
     /// Get package by full name and version. Will return `None` if package cannot be found
     ///
     /// # Example
-    /// ```no_run
+    /// ```ignore
     /// use archlinux_repo::Repository;
     ///
     /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
@@ -208,7 +208,7 @@ impl Repository {
     /// **NOTE! Not all packages have names**
     ///
     /// # Example
-    /// ```no_run
+    /// ```ignore
     /// use archlinux_repo::Repository;
     ///
     /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
@@ -224,7 +224,7 @@ impl Repository {
     /// **NOTE! This method will always return None if `load_files_meta` is `false`**
     ///
     /// # Example
-    /// ```no_run
+    /// ```ignore
     /// use archlinux_repo::{Repository, RepositoryBuilder};
     ///
     /// let repo = RepositoryBuilder::new("mingw64", "http://repo.msys2.org/mingw/x86_64")
@@ -241,7 +241,7 @@ impl Repository {
     /// Panics if package not found
     ///
     /// # Example
-    /// ```no_run
+    /// ```ignore
     /// use archlinux_repo::Repository;
     ///
     /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
@@ -384,7 +384,7 @@ impl<'a> IntoIterator for &'a Repository {
 /// Repository builder
 ///
 /// # Example
-/// ```no_run
+/// ```ignore
 /// use archlinux_repo::RepositoryBuilder;;
 ///
 /// RepositoryBuilder::new("mingw64", "http://repo.msys2.org/mingw/x86_64")
@@ -463,7 +463,7 @@ mod date_serde {
 
 #[cfg(test)]
 mod test {
-    use crate::{Repository, RepositoryBuilder, Package, PackageFiles};
+    use crate::{Package, PackageFiles, Repository, RepositoryBuilder};
 
     #[tokio::test]
     async fn repo_loads_msys2_mingw_repo() {
