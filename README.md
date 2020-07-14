@@ -1,5 +1,5 @@
 # archlinux-repo
-[![Build Status](https://travis-ci.org/alesharik/archlinux-repo-rs.svg?branch=master)](https://travis-ci.com/github/alesharik/archlinux-repo-rs)
+[![Build Status](https://travis-ci.com/alesharik/archlinux-repo-rs.svg?branch=master)](https://travis-ci.com/github/alesharik/archlinux-repo-rs)
 [![Docs](https://docs.rs/archlinux-repo/badge.svg)](https://docs.rs/archlinux-repo)
 
 Arch Linux repository parser
