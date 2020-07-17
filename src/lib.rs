@@ -13,11 +13,15 @@
 //!     }
 //! }
 //! ```
-use chrono::{DateTime, Utc};
+mod data;
+use data::PackageFiles;
+pub use data::{
+    Dependency, DependencyConstraints, DependencyConstraintsParseError, DependencyVersion,
+    DependencyVersionParseError, Package,
+};
 use flate2::read::GzDecoder;
 use reqwest::{StatusCode, Url};
 use serde::export::Formatter;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::Display;
@@ -25,84 +29,6 @@ use std::io::{Cursor, Read, Write};
 use std::ops::Index;
 use std::rc::Rc;
 use tar::Archive;
-
-/// Repository package
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
-pub struct Package {
-    /// file name
-    #[serde(rename = "FILENAME")]
-    pub file_name: String,
-    /// name
-    #[serde(rename = "NAME")]
-    pub name: String,
-    /// name without architecture
-    #[serde(rename = "BASE")]
-    pub base: Option<String>,
-    /// version
-    #[serde(rename = "VERSION")]
-    pub version: String,
-    /// description
-    #[serde(rename = "DESC")]
-    pub description: Option<String>,
-    /// package groups
-    #[serde(rename = "GROUPS")]
-    pub groups: Option<Vec<String>>,
-    /// tar.xz archive size
-    #[serde(rename = "CSIZE")]
-    pub compressed_size: u64,
-    /// installed files size
-    #[serde(rename = "ISIZE")]
-    pub installed_size: u64,
-    /// MD5 checksum
-    #[serde(rename = "MD5SUM")]
-    pub md5_sum: String,
-    /// SHA256 checksum
-    #[serde(rename = "SHA256SUM")]
-    pub sha256_sum: String,
-    /// PGP signature
-    #[serde(rename = "PGPSIG")]
-    pub pgp_signature: String,
-    /// package home url
-    #[serde(rename = "URL")]
-    pub home_url: Option<String>,
-    /// license name
-    #[serde(rename = "LICENSE")]
-    pub license: Option<Vec<String>>,
-    /// processor architecture
-    #[serde(rename = "ARCH")]
-    pub architecture: String,
-    /// build date
-    #[serde(rename = "BUILDDATE", with = "date_serde")]
-    pub build_date: DateTime<Utc>,
-    /// who created this package
-    #[serde(rename = "PACKAGER")]
-    pub packager: String,
-    /// packages which this package replaces
-    #[serde(rename = "REPLACES")]
-    pub replaces: Option<Vec<String>>,
-    /// packages which cannot be used with this package
-    #[serde(rename = "CONFLICTS")]
-    pub conflicts: Option<Vec<String>>,
-    /// packages provided by this package
-    #[serde(rename = "PROVIDES")]
-    pub provides: Option<Vec<String>>,
-    /// run-time dependencies
-    #[serde(rename = "DEPENDS")]
-    pub depends: Option<Vec<String>>,
-    #[serde(rename = "OPTDEPENDS")]
-    pub optdepends: Option<Vec<String>>,
-    /// build-time dependencies
-    #[serde(rename = "MAKEDEPENDS")]
-    pub makedepends: Option<Vec<String>>,
-    #[serde(rename = "CHECKDEPENDS")]
-    pub checkdepends: Option<Vec<String>>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
-struct PackageFiles {
-    #[serde(rename = "FILES")]
-    files: Vec<String>,
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HttpError {
@@ -456,29 +382,10 @@ impl RepositoryBuilder {
     }
 }
 
-mod date_serde {
-    use chrono::{DateTime, TimeZone, Utc};
-    use serde::{self, Deserialize, Deserializer, Serializer};
-
-    pub fn serialize<S>(date: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_i64(date.timestamp())
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let timestamp = i64::deserialize(deserializer)?;
-        Ok(Utc.timestamp(timestamp, 0))
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use crate::{Package, PackageFiles, Repository, RepositoryBuilder};
+    use crate::data::PackageFiles;
+    use crate::{Package, Repository, RepositoryBuilder};
 
     #[tokio::test]
     async fn repo_loads_msys2_mingw_repo() {
