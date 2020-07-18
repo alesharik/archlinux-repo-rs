@@ -561,10 +561,14 @@ mod test {
         let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64")
             .await
             .unwrap();
-        let a = repo.get_package_by_name("mingw-w64-x86_64-libwinpthread-git").unwrap();
-        let b = repo.get_package_by_name("mingw-w64-x86_64-libwinpthread").unwrap();
+        let a = repo
+            .get_package_by_name("mingw-w64-x86_64-libwinpthread-git")
+            .unwrap();
+        let b = repo
+            .get_package_by_name("mingw-w64-x86_64-libwinpthread")
+            .unwrap();
         assert_eq!(1, b.linked_sources.len());
-        assert_eq!(a, b.linked_sources.iter().nth(0).unwrap().as_ref())
+        assert_eq!(a, b.linked_sources[0].as_ref())
     }
 
     #[tokio::test]
