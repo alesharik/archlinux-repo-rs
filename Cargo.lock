@@ -15,6 +15,7 @@ dependencies = [
  "flate2",
  "futures",
  "hyper",
+ "lazy_static",
  "log",
  "reqwest",
  "serde",

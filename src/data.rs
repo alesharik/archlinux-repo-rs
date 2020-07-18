@@ -3,6 +3,7 @@ use serde::de::Visitor;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DependencyConstraintsParseError {
@@ -309,6 +310,47 @@ pub struct Package {
     pub makedepends: Option<Vec<Dependency>>,
     #[serde(rename = "CHECKDEPENDS")]
     pub checkdepends: Option<Vec<Dependency>>,
+    /// VCS packages with same name. For example `test-git-1.0` is a VCS package for `test-1.0`.
+    /// Supported prefixes are:
+    /// - cvs
+    /// - svn
+    /// - hg
+    /// - darcs
+    /// - bzr
+    /// - git
+    #[serde(skip)]
+    pub linked_sources: Vec<Arc<Package>>,
+}
+
+impl Package {
+    pub fn base_package_for_csv(csv: &Package, suffix: &str) -> Self {
+        Package {
+            file_name: csv.file_name.clone(),
+            name: csv.name.replace(suffix, ""),
+            base: csv.base.clone().map(|name| name.replace(suffix, "")),
+            version: csv.version.replace(suffix, ""),
+            architecture: csv.architecture.clone(),
+            depends: csv.depends.clone(),
+            build_date: csv.build_date,
+            checkdepends: csv.checkdepends.clone(),
+            compressed_size: csv.compressed_size,
+            conflicts: csv.conflicts.clone(),
+            description: csv.description.clone(),
+            groups: csv.groups.clone(),
+            home_url: csv.home_url.clone(),
+            installed_size: csv.installed_size,
+            license: csv.license.clone(),
+            linked_sources: Vec::new(),
+            makedepends: csv.makedepends.clone(),
+            md5_sum: csv.md5_sum.clone(),
+            optdepends: csv.optdepends.clone(),
+            packager: csv.packager.clone(),
+            pgp_signature: csv.pgp_signature.clone(),
+            provides: csv.provides.clone(),
+            replaces: csv.replaces.clone(),
+            sha256_sum: csv.sha256_sum.clone(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]

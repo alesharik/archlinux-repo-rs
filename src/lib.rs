@@ -14,6 +14,8 @@
 //! }
 //! ```
 mod data;
+#[macro_use]
+extern crate lazy_static;
 use data::PackageFiles;
 pub use data::{
     Dependency, DependencyConstraints, DependencyConstraintsParseError, DependencyVersion,
@@ -27,7 +29,7 @@ use std::error::Error;
 use std::fmt::Display;
 use std::io::{Cursor, Read, Write};
 use std::ops::Index;
-use std::rc::Rc;
+use std::sync::Arc;
 use tar::Archive;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -92,135 +94,80 @@ impl Display for Progress {
     }
 }
 
-/// Arch Linux repository
-pub struct Repository {
-    url: String,
-    name: String,
-    load_files_meta: bool,
-    progress_listener: Option<Box<dyn Fn(Progress)>>,
-    packages: Vec<Rc<Package>>,
-    package_base: HashMap<String, Rc<Package>>,
-    package_name: HashMap<String, Rc<Package>>,
-    package_version: HashMap<String, Rc<Package>>,
+lazy_static! {
+    static ref SUFFIXES: Vec<&'static str> = vec!["-cvs", "-svn", "-hg", "-darcs", "-bzr", "-git"];
+}
+
+#[derive(Default)]
+struct Inner {
+    packages: Vec<Arc<Package>>,
+    package_base: HashMap<String, Arc<Package>>,
+    package_name: HashMap<String, Arc<Package>>,
+    package_version: HashMap<String, Arc<Package>>,
     package_files: HashMap<String, PackageFiles>,
 }
 
-impl Repository {
-    /// Loads arch repository by it's name and url
-    ///
-    /// # Example
-    /// ```ignore
-    /// use archlinux_repo::Repository;
-    ///
-    /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
-    /// ```
-    pub async fn load(name: &str, url: &str) -> Result<Repository, Box<dyn Error>> {
-        RepositoryBuilder::new(name, url).load().await
-    }
-
-    /// Get package by full name. Will return `None` if package cannot be found
-    ///
-    /// # Example
-    /// ```ignore
-    /// use archlinux_repo::Repository;
-    ///
-    /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
-    /// let gtk = repo.get_package_by_name("mingw-w64-x86_64-gtk3")?;
-    /// ```
-    pub fn get_package_by_name(&self, name: &str) -> Option<&Package> {
-        self.package_name.get(name).map(|p| p as &Package)
-    }
-
-    /// Get package by full name and version. Will return `None` if package cannot be found
-    ///
-    /// # Example
-    /// ```ignore
-    /// use archlinux_repo::Repository;
-    ///
-    /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
-    /// let gtk = repo.get_package_by_name_and_version("mingw-w64-x86_64-gtk3-3.24.9-4")?;
-    /// ```
-    pub fn get_package_by_name_and_version(&self, name: &str) -> Option<&Package> {
-        self.package_version.get(name).map(|p| p as &Package)
-    }
-
-    /// Get package by base name. Will return `None` if package cannot be found
-    ///
-    /// **NOTE! Not all packages have names**
-    ///
-    /// # Example
-    /// ```ignore
-    /// use archlinux_repo::Repository;
-    ///
-    /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
-    /// let gtk = repo.get_package_by_base("mingw-w64-gtk3")?;
-    /// ```
-    pub fn get_package_by_base(&self, name: &str) -> Option<&Package> {
-        self.package_base.get(name).map(|p| p as &Package)
-    }
-
-    /// Get package files by full name.
-    /// Will return `None` if package cannot be found or does not contains file metadata
-    ///
-    /// **NOTE! This method will always return None if `load_files_meta` is `false`**
-    ///
-    /// # Example
-    /// ```ignore
-    /// use archlinux_repo::{Repository, RepositoryBuilder};
-    ///
-    /// let repo = RepositoryBuilder::new("mingw64", "http://repo.msys2.org/mingw/x86_64")
-    ///                 .files_metadata(true)
-    ///                 .load()
-    ///                 .await?;
-    /// let gtk_files = repo.get_package_files("mingw-w64-x86_64-gtk3")?;
-    /// ```
-    pub fn get_package_files(&self, name: &str) -> Option<&Vec<String>> {
-        self.package_files.get(name).map(|m| &m.files)
-    }
-
-    /// Send HTTP request to download package by full name/base name or name with version.
-    /// Panics if package not found
-    ///
-    /// # Example
-    /// ```ignore
-    /// use archlinux_repo::Repository;
-    ///
-    /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
-    /// let gtk_package = repo.request_package("mingw-w64-gtk3").await?.bytes().await?;
-    /// ```
-    pub async fn request_package(&self, name: &str) -> Result<reqwest::Response, Box<dyn Error>> {
-        let package = self.index(name);
-        let url = format!("{}/{}", self.url, package.file_name);
-        Ok(reqwest::get(Url::parse(&url)?).await?)
-    }
-
-    /// Reload repository
-    //TODO signature verification
-    pub async fn reload(&mut self) -> Result<(), Box<dyn Error>> {
-        self.package_name.clear();
-        self.package_base.clear();
-        self.package_version.clear();
-        self.packages.clear();
-        self.package_files.clear();
-        self.load_db().await?;
-        if self.load_files_meta {
-            self.load_files().await?;
+impl Inner {
+    async fn load<P>(
+        url: &str,
+        name: &str,
+        load_files_meta: bool,
+        progress: P,
+    ) -> Result<Self, Box<dyn Error>>
+    where
+        P: Fn(Progress),
+    {
+        let mut inner = Inner::default();
+        inner.load_db(url, name, &progress).await?;
+        if load_files_meta {
+            inner.load_files(url, name, &progress).await?;
         }
+        Ok(inner)
+    }
+
+    async fn load_db<P>(&mut self, url: &str, name: &str, progress: P) -> Result<(), Box<dyn Error>>
+    where
+        P: Fn(Progress),
+    {
+        let db_url = format!("{}/{}.db.tar.gz", url, name);
+        progress(Progress::LoadingDb);
+        let mut db_archive =
+            Inner::load_archive(&db_url, |r, a| progress(Progress::LoadingDbChunk(r, a))).await?;
+        for entry_result in db_archive.entries()? {
+            let mut entry = entry_result?;
+            let path = entry.path()?.to_str().unwrap().to_owned();
+            if path.ends_with("/desc") {
+                progress(Progress::ReadingDbFile(path));
+                let mut contents = String::new();
+                entry.read_to_string(&mut contents)?;
+                let package: Package = archlinux_repo_parser::from_str(&contents)?;
+                self.insert(package);
+            }
+        }
+        progress(Progress::ReadingDbDone);
         Ok(())
     }
 
-    async fn load_files(&mut self) -> Result<(), Box<dyn Error>> {
-        let db_url = format!("{}/{}.files.tar.gz", self.url, self.name);
-        self.progress_changed(Progress::LoadingFilesMetadata);
-        let mut db_archive = Repository::load_archive(&db_url, |r, a| {
-            self.progress_changed(Progress::LoadingFilesMetadataChunk(r, a))
+    async fn load_files<P>(
+        &mut self,
+        url: &str,
+        name: &str,
+        progress: P,
+    ) -> Result<(), Box<dyn Error>>
+    where
+        P: Fn(Progress),
+    {
+        let db_url = format!("{}/{}.files.tar.gz", url, name);
+        progress(Progress::LoadingFilesMetadata);
+        let mut db_archive = Inner::load_archive(&db_url, |r, a| {
+            progress(Progress::LoadingFilesMetadataChunk(r, a))
         })
         .await?;
         for entry_result in db_archive.entries()? {
             let mut entry = entry_result?;
             let path = entry.path()?.to_str().unwrap().to_owned();
             if path.ends_with("/files") {
-                self.progress_changed(Progress::ReadingFilesMetadataFile(path.clone()));
+                progress(Progress::ReadingFilesMetadataFile(path.clone()));
                 let mut contents = String::new();
                 entry.read_to_string(&mut contents)?;
                 let files: PackageFiles = archlinux_repo_parser::from_str(&contents)?;
@@ -229,41 +176,40 @@ impl Repository {
                 self.package_files.insert(package.name.to_owned(), files);
             }
         }
-        self.progress_changed(Progress::ReadingFilesDone);
+        progress(Progress::ReadingFilesDone);
         Ok(())
     }
 
-    async fn load_db(&mut self) -> Result<(), Box<dyn Error>> {
-        let db_url = format!("{}/{}.db.tar.gz", self.url, self.name);
-        self.progress_changed(Progress::LoadingDb);
-        let mut db_archive = Repository::load_archive(&db_url, |r, a| {
-            self.progress_changed(Progress::LoadingDbChunk(r, a))
-        })
-        .await?;
-        for entry_result in db_archive.entries()? {
-            let mut entry = entry_result?;
-            let path = entry.path()?.to_str().unwrap().to_owned();
-            if path.ends_with("/desc") {
-                self.progress_changed(Progress::ReadingDbFile(path));
-                let mut contents = String::new();
-                entry.read_to_string(&mut contents)?;
-                let package: Package = archlinux_repo_parser::from_str(&contents)?;
-                let package_ref = Rc::new(package);
-                if let Some(base) = package_ref.base.as_ref() {
-                    self.package_base
-                        .insert(base.to_owned(), package_ref.clone());
-                }
-                self.package_name
-                    .insert(package_ref.name.to_owned(), package_ref.clone());
-                self.package_version.insert(
-                    (package_ref.name.to_owned() + "-" + &package_ref.version).to_owned(),
-                    package_ref.clone(),
-                );
-                self.packages.push(package_ref);
+    fn insert(&mut self, package: Package) {
+        let package_ref = self.insert_into_maps(package);
+        for suffix in SUFFIXES.iter() {
+            if package_ref.name.ends_with(suffix) {
+                let base_name = package_ref.name.replace(suffix, "");
+                let mut base_package = self
+                    .package_name
+                    .get(&base_name)
+                    .map(|p| p.as_ref().clone())
+                    .unwrap_or_else(|| Package::base_package_for_csv(package_ref.as_ref(), suffix));
+                base_package.linked_sources.push(package_ref.clone());
+                self.insert_into_maps(base_package);
             }
         }
-        self.progress_changed(Progress::ReadingDbDone);
-        Ok(())
+    }
+
+    fn insert_into_maps(&mut self, package: Package) -> Arc<Package> {
+        let package_ref = Arc::new(package);
+        if let Some(base) = package_ref.base.as_ref() {
+            self.package_base
+                .insert(base.to_owned(), package_ref.clone());
+        }
+        self.package_name
+            .insert(package_ref.name.to_owned(), package_ref.clone());
+        self.package_version.insert(
+            package_ref.name.to_owned() + "-" + &package_ref.version,
+            package_ref.clone(),
+        );
+        self.packages.push(package_ref.clone());
+        package_ref
     }
 
     async fn load_archive<P>(
@@ -292,11 +238,139 @@ impl Repository {
         decoder.read_to_end(&mut buf)?;
         Ok(Archive::new(Cursor::new(buf)))
     }
+}
 
-    fn progress_changed(&self, progress: Progress) {
-        if let Some(listener) = self.progress_listener.as_ref() {
-            listener(progress)
-        }
+/// Arch Linux repository
+pub struct Repository {
+    inner: Inner,
+    url: String,
+    name: String,
+    load_files_meta: bool,
+    progress_listener: Option<Box<dyn Fn(Progress)>>,
+}
+
+impl Repository {
+    async fn new(
+        url: String,
+        name: String,
+        load_files_meta: bool,
+        progress_listener: Option<Box<dyn Fn(Progress)>>,
+    ) -> Result<Self, Box<dyn Error>> {
+        let listener = progress_listener.as_ref();
+        let inner = Inner::load(&url, &name, load_files_meta, |progress| {
+            if let Some(l) = listener {
+                l(progress)
+            }
+        })
+        .await?;
+        Ok(Repository {
+            progress_listener,
+            load_files_meta,
+            name,
+            url,
+            inner,
+        })
+    }
+    /// Loads arch repository by it's name and url
+    ///
+    /// # Example
+    /// ```ignore
+    /// use archlinux_repo::Repository;
+    ///
+    /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
+    /// ```
+    pub async fn load(name: &str, url: &str) -> Result<Repository, Box<dyn Error>> {
+        RepositoryBuilder::new(name, url).load().await
+    }
+
+    /// Get package by full name. Will return `None` if package cannot be found
+    ///
+    /// # Example
+    /// ```ignore
+    /// use archlinux_repo::Repository;
+    ///
+    /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
+    /// let gtk = repo.get_package_by_name("mingw-w64-x86_64-gtk3")?;
+    /// ```
+    pub fn get_package_by_name(&self, name: &str) -> Option<&Package> {
+        self.inner.package_name.get(name).map(|p| p as &Package)
+    }
+
+    /// Get package by full name and version. Will return `None` if package cannot be found
+    ///
+    /// # Example
+    /// ```ignore
+    /// use archlinux_repo::Repository;
+    ///
+    /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
+    /// let gtk = repo.get_package_by_name_and_version("mingw-w64-x86_64-gtk3-3.24.9-4")?;
+    /// ```
+    pub fn get_package_by_name_and_version(&self, name: &str) -> Option<&Package> {
+        self.inner.package_version.get(name).map(|p| p as &Package)
+    }
+
+    /// Get package by base name. Will return `None` if package cannot be found
+    ///
+    /// **NOTE! Not all packages have names**
+    ///
+    /// # Example
+    /// ```ignore
+    /// use archlinux_repo::Repository;
+    ///
+    /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
+    /// let gtk = repo.get_package_by_base("mingw-w64-gtk3")?;
+    /// ```
+    pub fn get_package_by_base(&self, name: &str) -> Option<&Package> {
+        self.inner.package_base.get(name).map(|p| p as &Package)
+    }
+
+    /// Get package files by full name.
+    /// Will return `None` if package cannot be found or does not contains file metadata
+    ///
+    /// **NOTE! This method will always return None if `load_files_meta` is `false`**
+    /// **NOTE! For CSV packages base package name will always return None unless it exists in repo**
+    ///
+    /// # Example
+    /// ```ignore
+    /// use archlinux_repo::{Repository, RepositoryBuilder};
+    ///
+    /// let repo = RepositoryBuilder::new("mingw64", "http://repo.msys2.org/mingw/x86_64")
+    ///                 .files_metadata(true)
+    ///                 .load()
+    ///                 .await?;
+    /// let gtk_files = repo.get_package_files("mingw-w64-x86_64-gtk3")?;
+    /// ```
+    pub fn get_package_files(&self, name: &str) -> Option<&Vec<String>> {
+        self.inner.package_files.get(name).map(|m| &m.files)
+    }
+
+    /// Send HTTP request to download package by full name/base name or name with version.
+    /// Panics if package not found
+    ///
+    /// # Example
+    /// ```ignore
+    /// use archlinux_repo::Repository;
+    ///
+    /// let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64").await?;
+    /// let gtk_package = repo.request_package("mingw-w64-gtk3").await?.bytes().await?;
+    /// ```
+    pub async fn request_package(&self, name: &str) -> Result<reqwest::Response, Box<dyn Error>> {
+        let package = self.index(name);
+        let url = format!("{}/{}", self.url, package.file_name);
+        Ok(reqwest::get(Url::parse(&url)?).await?)
+    }
+
+    /// Reload repository
+    //TODO signature verification
+    pub async fn reload(&mut self) -> Result<(), Box<dyn Error>> {
+        let listener = self.progress_listener.as_ref();
+        self.inner = Inner::load(&self.url, &self.name, self.load_files_meta, |progress| {
+            if let Some(l) = listener {
+                l(progress)
+            }
+        })
+        .await?;
+        Ok(())
     }
 }
 
@@ -318,7 +392,7 @@ impl<'a> IntoIterator for &'a Repository {
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        Box::new(self.packages.iter().map(|v| &**v))
+        Box::new(self.inner.packages.iter().map(|v| &**v))
     }
 }
 
@@ -366,19 +440,7 @@ impl RepositoryBuilder {
 
     /// Create and load repository
     pub async fn load(self) -> Result<Repository, Box<dyn Error>> {
-        let mut repo = Repository {
-            url: self.url,
-            name: self.name,
-            packages: Vec::new(),
-            package_version: HashMap::new(),
-            package_name: HashMap::new(),
-            package_base: HashMap::new(),
-            progress_listener: self.progress_listener,
-            load_files_meta: self.files_meta,
-            package_files: HashMap::new(),
-        };
-        repo.reload().await?;
-        Ok(repo)
+        Ok(Repository::new(self.url, self.name, self.files_meta, self.progress_listener).await?)
     }
 }
 
@@ -492,6 +554,17 @@ mod test {
             .unwrap();
         let gtk = &repo["mingw-w64-x86_64-gtk3"];
         assert_eq!("mingw-w64-gtk3", gtk.base.as_ref().unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_libwinpthread_by_csv_and_base_names() {
+        let repo = Repository::load("mingw64", "http://repo.msys2.org/mingw/x86_64")
+            .await
+            .unwrap();
+        let a = repo.get_package_by_name("mingw-w64-x86_64-libwinpthread-git").unwrap();
+        let b = repo.get_package_by_name("mingw-w64-x86_64-libwinpthread").unwrap();
+        assert_eq!(1, b.linked_sources.len());
+        assert_eq!(a, b.linked_sources.iter().nth(0).unwrap().as_ref())
     }
 
     #[tokio::test]
