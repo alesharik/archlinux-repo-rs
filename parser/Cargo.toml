@@ -1,6 +1,6 @@
 [package]
 name = "archlinux-repo-parser"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Aleksei Arsenev <alesharik4@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
