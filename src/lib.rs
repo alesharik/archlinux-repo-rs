@@ -23,7 +23,7 @@ pub use data::{
 };
 use flate2::read::GzDecoder;
 use reqwest::{StatusCode, Url};
-use serde::export::Formatter;
+use serde::__private::Formatter;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::Display;
@@ -199,8 +199,11 @@ impl Inner {
     fn insert_into_maps(&mut self, package: Package) -> Arc<Package> {
         let package_ref = Arc::new(package);
         if let Some(base) = package_ref.base.as_ref() {
-            self.package_base
-                .insert(base.to_owned(), package_ref.clone());
+            if let std::collections::hash_map::Entry::Vacant(e) = self.package_base.entry(base.to_owned()) {
+                e.insert(package_ref.clone());
+            } else {
+                log::warn!("[archlinux-repo-rs] Found package {} with already registered base name! Ignoring...", &package_ref.name)
+            }
         }
         self.package_name
             .insert(package_ref.name.to_owned(), package_ref.clone());

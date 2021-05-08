@@ -52,10 +52,10 @@ impl<'de> Deserializer<'de> {
         }
     }
 
-    fn peek_delimiter(&mut self) -> Result<bool> {
+    fn peek_delimiter(&mut self) -> bool {
         match self.input.find('\n') {
-            Some(len) => Ok(len == 0),
-            None => Ok(self.input.is_empty()),
+            Some(len) => len == 0,
+            None => self.input.is_empty(),
         }
     }
 
@@ -254,7 +254,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        if self.peek_delimiter()? {
+        if self.peek_delimiter() {
             self.parse_delimiter()?;
             visitor.visit_none()
         } else {
@@ -266,7 +266,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        if self.peek_delimiter()? {
+        if self.peek_delimiter() {
             self.parse_delimiter()?;
             visitor.visit_unit()
         } else {
@@ -873,7 +873,7 @@ impl<'de, 'a> SeqAccess<'de> for NewlineSeparated<'a, 'de> {
     where
         T: DeserializeSeed<'de>,
     {
-        if self.de.peek_delimiter()? {
+        if self.de.peek_delimiter() {
             return Ok(None);
         }
         let mut deserializer = ValueDeserializer::new(self.de, false);
@@ -888,7 +888,7 @@ impl<'de, 'a> MapAccess<'de> for NewlineSeparated<'a, 'de> {
     where
         K: DeserializeSeed<'de>,
     {
-        if self.de.peek_delimiter()? {
+        if self.de.peek_delimiter() {
             return Ok(None);
         }
         seed.deserialize(&mut *self.de).map(Some)

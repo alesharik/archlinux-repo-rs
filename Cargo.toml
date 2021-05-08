@@ -1,6 +1,6 @@
 [package]
 name = "archlinux-repo"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Aleksei Arsenev <alesharik4@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -12,17 +12,17 @@ categories = ["asynchronous"]
 include = ["src/", "LICENSE-APACHE", "LICENSE-MIT", "README.md"]
 
 [dependencies]
-serde = { version = "1.0.114", features = ["derive"] }
-futures = "0.3.5"
-tokio = { version = "0.2.21", features = ["macros"] }
-chrono = "0.4.13"
-flate2 = "1.0.16"
-tar = "0.4.29"
-reqwest = "0.10.6"
-hyper = "0.13.6"
-log = "0.4.8"
+serde = { version = "1.0.125", features = ["derive"] }
+futures = "0.3.14"
+tokio = { version = "1.5.0", features = ["macros", "rt"] }
+chrono = "0.4.19"
+flate2 = "1.0.20"
+tar = "0.4.33"
+reqwest = "0.11.3"
+hyper = "0.14.7"
+log = "0.4.14"
 lazy_static = "1.4.0"
-archlinux-repo-parser = { path = "parser", version = "0.1.1" }
+archlinux-repo-parser = { path = "parser", version = "0.1.4" }
 
 [workspace]
 members = ["parser"]

@@ -105,45 +105,45 @@ impl FromStr for DependencyVersion {
     type Err = DependencyVersionParseError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        if value.starts_with(">=") {
-            if value.len() == 2 {
+        if let Some(value) = value.strip_prefix(">=") {
+            if value.is_empty() {
                 return Err(DependencyVersionParseError::VersionNotFound);
             }
             Ok(DependencyVersion {
                 constraint: DependencyConstraints::MoreOrEqualsThan,
-                version: value[2..].to_owned(),
+                version: value.to_owned(),
             })
-        } else if value.starts_with("<=") {
-            if value.len() == 2 {
+        } else if let Some(value) = value.strip_prefix("<=") {
+            if value.is_empty() {
                 return Err(DependencyVersionParseError::VersionNotFound);
             }
             Ok(DependencyVersion {
                 constraint: DependencyConstraints::LessOrEqualsThan,
-                version: value[2..].to_owned(),
+                version: value.to_owned(),
             })
-        } else if value.starts_with('<') {
-            if value.len() == 1 {
+        } else if let Some(value) = value.strip_prefix('<') {
+            if value.is_empty() {
                 return Err(DependencyVersionParseError::VersionNotFound);
             }
             Ok(DependencyVersion {
                 constraint: DependencyConstraints::LessThan,
-                version: value[1..].to_owned(),
+                version: value.to_owned(),
             })
-        } else if value.starts_with('>') {
-            if value.len() == 1 {
+        } else if let Some(value) = value.strip_prefix('>') {
+            if value.is_empty() {
                 return Err(DependencyVersionParseError::VersionNotFound);
             }
             Ok(DependencyVersion {
                 constraint: DependencyConstraints::MoreThan,
-                version: value[1..].to_owned(),
+                version: value.to_owned(),
             })
-        } else if value.starts_with('=') {
-            if value.len() == 1 {
+        } else if let Some(value) = value.strip_prefix('=') {
+            if value.is_empty() {
                 return Err(DependencyVersionParseError::VersionNotFound);
             }
             Ok(DependencyVersion {
                 constraint: DependencyConstraints::Equals,
-                version: value[1..].to_owned(),
+                version: value.to_owned(),
             })
         } else {
             Err(DependencyVersionParseError::ConstraintNotFound)
