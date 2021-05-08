@@ -199,7 +199,9 @@ impl Inner {
     fn insert_into_maps(&mut self, package: Package) -> Arc<Package> {
         let package_ref = Arc::new(package);
         if let Some(base) = package_ref.base.as_ref() {
-            if let std::collections::hash_map::Entry::Vacant(e) = self.package_base.entry(base.to_owned()) {
+            if let std::collections::hash_map::Entry::Vacant(e) =
+                self.package_base.entry(base.to_owned())
+            {
                 e.insert(package_ref.clone());
             } else {
                 log::warn!("[archlinux-repo-rs] Found package {} with already registered base name! Ignoring...", &package_ref.name)
