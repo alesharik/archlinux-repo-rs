@@ -269,11 +269,11 @@ impl Repository {
         })
         .await?;
         Ok(Repository {
-            progress_listener,
-            load_files_meta,
-            name,
-            url,
             inner,
+            url,
+            name,
+            load_files_meta,
+            progress_listener,
         })
     }
     /// Loads arch repository by it's name and url
