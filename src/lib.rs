@@ -225,7 +225,7 @@ impl Inner {
         P: Fn(u64, Option<u64>),
     {
         let mut enc_buf = Vec::new();
-        let mut response = reqwest::get(Url::parse(&url)?).await?;
+        let mut response = reqwest::get(Url::parse(url)?).await?;
         if !response.status().is_success() {
             return Err(Box::new(HttpError {
                 status: response.status(),
