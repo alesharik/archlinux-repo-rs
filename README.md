@@ -7,7 +7,7 @@ Arch Linux repository parser
 ## Usage
 ```toml
 [dependencies]
-archlinux-repo = "0.1.5"
+archlinux-repo = "0.1.6"
 ```
 
 ```rust

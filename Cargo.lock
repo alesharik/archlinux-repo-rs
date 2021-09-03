@@ -10,7 +10,7 @@ checksum = "ccc9a9dd069569f212bc4330af9f17c4afb5e8ce185e83dbb14f1349dda18b10"
 
 [[package]]
 name = "archlinux-repo"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "archlinux-repo-parser",
  "chrono",
@@ -27,7 +27,7 @@ dependencies = [
 
 [[package]]
 name = "archlinux-repo-parser"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "serde",
 ]
