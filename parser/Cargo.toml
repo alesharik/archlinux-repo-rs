@@ -12,4 +12,4 @@ categories = ["parser-implementations"]
 include = ["src/", "LICENSE-APACHE", "LICENSE-MIT", "README.md"]
 
 [dependencies]
-serde = { version = "1.0.127", features = ["derive"] }
+serde = { version = "1.0.148", features = ["derive"] }
