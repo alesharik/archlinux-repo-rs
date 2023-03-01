@@ -19,7 +19,7 @@ chrono = "0.4.19"
 flate2 = "1.0.21"
 tar = "0.4.37"
 reqwest = "0.11.9"
-hyper = "0.14.12"
+hyper = "0.14.24"
 log = "0.4.14"
 lazy_static = "1.4.0"
 archlinux-repo-parser = { path = "parser", version = "0.1.6" }
